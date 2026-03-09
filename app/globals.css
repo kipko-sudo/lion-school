@@ -1,0 +1,144 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Primary Colors - Green accent from inspiration */
+  --primary: 42.6 71% 56%;
+  --primary-foreground: 0 0% 100%;
+  
+  /* Accent Colors - Orange warmth */
+  --accent: 34.3 89% 56%;
+  --accent-foreground: 0 0% 100%;
+  
+  /* Background & Surfaces - Mint cream */
+  --background: 155 60% 96%;
+  --foreground: 209 67% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 209 67% 11%;
+  
+  /* Secondary - Neutrals */
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 209 67% 11%;
+  --muted: 0 0% 92%;
+  --muted-foreground: 0 0% 63%;
+  
+  /* UI Elements */
+  --border: 0 0% 90%;
+  --input: 0 0% 96%;
+  --ring: 42.6 71% 56%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 209 67% 11%;
+  
+  /* Radius */
+  --radius: 0.625rem;
+  
+  /* Sidebar */
+  --sidebar: 155 60% 96%;
+  --sidebar-foreground: 209 67% 11%;
+  --sidebar-primary: 42.6 71% 56%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 34.3 89% 56%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 0 0% 90%;
+  --sidebar-ring: 42.6 71% 56%;
+  
+  /* Charts */
+  --chart-1: 42.6 71% 56%;
+  --chart-2: 34.3 89% 56%;
+  --chart-3: 210 100% 50%;
+  --chart-4: 280 85% 56%;
+  --chart-5: 30 80% 55%;
+}
+
+.dark {
+  --primary: 42.6 71% 56%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 34.3 89% 56%;
+  --accent-foreground: 0 0% 100%;
+  --background: 209 67% 8%;
+  --foreground: 0 0% 98%;
+  --card: 209 67% 12%;
+  --card-foreground: 0 0% 98%;
+  --secondary: 209 67% 16%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 209 67% 20%;
+  --muted-foreground: 0 0% 75%;
+  --border: 209 67% 20%;
+  --input: 209 67% 16%;
+  --ring: 42.6 71% 56%;
+  --popover: 209 67% 12%;
+  --popover-foreground: 0 0% 98%;
+  --sidebar: 209 67% 10%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-primary: 42.6 71% 56%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 34.3 89% 56%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 209 67% 20%;
+  --sidebar-ring: 42.6 71% 56%;
+  --chart-1: 42.6 71% 56%;
+  --chart-2: 34.3 89% 56%;
+  --chart-3: 210 100% 50%;
+  --chart-4: 280 85% 56%;
+  --chart-5: 30 80% 55%;
+}
+
+@theme inline {
+  --font-sans: 'Poppins', system-ui, -apple-system, sans-serif;
+  --font-poppins: 'Poppins', system-ui, -apple-system, sans-serif;
+  
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(0 84% 60%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+  --radius: var(--radius);
+}
+
+/* Base styles */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-background text-foreground;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-poppins font-bold;
+}
+
+p {
+  @apply font-poppins font-normal;
+}
+
+/* Utility classes */
+.text-balance {
+  text-wrap: balance;
+}
+
+.text-pretty {
+  text-wrap: pretty;
+}

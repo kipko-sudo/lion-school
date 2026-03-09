@@ -1,0 +1,546 @@
+{
+  "info": {
+    "name": "Lion School API",
+    "description": "Postman collection for Lion School Django API endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000" },
+    { "key": "api_prefix", "value": "/api" },
+    { "key": "token", "value": "" },
+    { "key": "course_id", "value": "1" },
+    { "key": "module_id", "value": "1" },
+    { "key": "quiz_id", "value": "1" },
+    { "key": "question_id", "value": "1" },
+    { "key": "lesson_id", "value": "1" },
+    { "key": "enrollment_id", "value": "1" },
+    { "key": "review_id", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "API Root",
+      "item": [
+        {
+          "name": "GET API Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}{{api_prefix}}/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student1@example.com\",\n  \"username\": \"student1\",\n  \"first_name\": \"Student\",\n  \"last_name\": \"One\",\n  \"password\": \"Password123!\",\n  \"password_confirm\": \"Password123!\",\n  \"role\": \"student\"\n}"
+            },
+            "url": "{{base_url}}{{api_prefix}}/auth/register/"
+          }
+        },
+        {
+          "name": "POST Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  if (data.token) pm.collectionVariables.set('token', data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student1@example.com\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": "{{base_url}}{{api_prefix}}/auth/login/"
+          }
+        },
+        {
+          "name": "GET Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/auth/profile/"
+          }
+        },
+        {
+          "name": "PUT Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Updated\",\n  \"last_name\": \"Name\",\n  \"bio\": \"Learning platform user\"\n}"
+            },
+            "url": "{{base_url}}{{api_prefix}}/auth/profile/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Courses",
+      "item": [
+        {
+          "name": "GET Courses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}{{api_prefix}}/courses/"
+          }
+        },
+        {
+          "name": "POST Create Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Django for Beginners\",\n  \"slug\": \"django-for-beginners\",\n  \"description\": \"Learn Django basics\",\n  \"category\": \"development\",\n  \"price\": \"49.99\",\n  \"thumbnail_url\": \"https://example.com/thumb.jpg\",\n  \"preview_video_url\": \"https://example.com/preview.mp4\",\n  \"estimated_duration_hours\": 12,\n  \"is_published\": true\n}"
+            },
+            "url": "{{base_url}}{{api_prefix}}/courses/"
+          }
+        },
+        {
+          "name": "GET Course Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/"
+          }
+        },
+        {
+          "name": "PUT Course",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated description\",\n  \"category\": \"development\",\n  \"price\": \"59.99\",\n  \"thumbnail_url\": \"https://example.com/new-thumb.jpg\",\n  \"preview_video_url\": \"https://example.com/new-preview.mp4\",\n  \"estimated_duration_hours\": 14,\n  \"is_published\": true\n}"
+            },
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/"
+          }
+        },
+        {
+          "name": "PATCH Course",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_published\": true\n}"
+            },
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/"
+          }
+        },
+        {
+          "name": "DELETE Course",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/"
+          }
+        },
+        {
+          "name": "POST Enroll In Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/enroll/"
+          }
+        },
+        {
+          "name": "GET Course Progress",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/progress/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Modules",
+      "item": [
+        {
+          "name": "GET Modules In Course",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/modules/"
+          }
+        },
+        {
+          "name": "POST Module In Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Module 1\",\n  \"description\": \"Intro module\",\n  \"order\": 1\n}"
+            },
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/modules/"
+          }
+        },
+        {
+          "name": "GET Module Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/modules/{{module_id}}/"
+          }
+        },
+        {
+          "name": "PUT Module",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Module 1 Updated\",\n  \"description\": \"Updated module\",\n  \"order\": 1\n}"
+            },
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/modules/{{module_id}}/"
+          }
+        },
+        {
+          "name": "PATCH Module",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Patch update\"\n}"
+            },
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/modules/{{module_id}}/"
+          }
+        },
+        {
+          "name": "DELETE Module",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/modules/{{module_id}}/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Quizzes",
+      "item": [
+        {
+          "name": "GET Quizzes In Course",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/quizzes/"
+          }
+        },
+        {
+          "name": "POST Quiz In Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Quiz 1\",\n  \"description\": \"First quiz\",\n  \"passing_score\": 70,\n  \"time_limit_minutes\": 20,\n  \"is_published\": true\n}"
+            },
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/quizzes/"
+          }
+        },
+        {
+          "name": "GET Quiz Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/quizzes/{{quiz_id}}/"
+          }
+        },
+        {
+          "name": "PUT Quiz",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Quiz 1 Updated\",\n  \"description\": \"Updated quiz\",\n  \"passing_score\": 75,\n  \"time_limit_minutes\": 25,\n  \"is_published\": true\n}"
+            },
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/quizzes/{{quiz_id}}/"
+          }
+        },
+        {
+          "name": "PATCH Quiz",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_published\": false\n}"
+            },
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/quizzes/{{quiz_id}}/"
+          }
+        },
+        {
+          "name": "DELETE Quiz",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/quizzes/{{quiz_id}}/"
+          }
+        },
+        {
+          "name": "POST Submit Quiz",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"answers\": [\n    {\n      \"question_id\": {{question_id}},\n      \"answer_text\": \"A\"\n    }\n  ]\n}"
+            },
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/quizzes/{{quiz_id}}/submit/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Questions",
+      "item": [
+        {
+          "name": "GET Questions In Quiz",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}{{api_prefix}}/quizzes/{{quiz_id}}/questions/"
+          }
+        },
+        {
+          "name": "POST Question In Quiz",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question_text\": \"What is 2 + 2?\",\n  \"question_type\": \"multiple_choice\",\n  \"order\": 1,\n  \"points\": 1,\n  \"options\": {\n    \"A\": \"3\",\n    \"B\": \"4\",\n    \"C\": \"5\"\n  },\n  \"correct_answer\": \"B\",\n  \"explanation\": \"2 + 2 equals 4\"\n}"
+            },
+            "url": "{{base_url}}{{api_prefix}}/quizzes/{{quiz_id}}/questions/"
+          }
+        },
+        {
+          "name": "GET Question Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}{{api_prefix}}/quizzes/{{quiz_id}}/questions/{{question_id}}/"
+          }
+        },
+        {
+          "name": "PUT Question",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question_text\": \"What is 3 + 3?\",\n  \"question_type\": \"multiple_choice\",\n  \"order\": 1,\n  \"points\": 1,\n  \"options\": {\n    \"A\": \"5\",\n    \"B\": \"6\",\n    \"C\": \"7\"\n  },\n  \"correct_answer\": \"B\",\n  \"explanation\": \"3 + 3 equals 6\"\n}"
+            },
+            "url": "{{base_url}}{{api_prefix}}/quizzes/{{quiz_id}}/questions/{{question_id}}/"
+          }
+        },
+        {
+          "name": "PATCH Question",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"points\": 2\n}"
+            },
+            "url": "{{base_url}}{{api_prefix}}/quizzes/{{quiz_id}}/questions/{{question_id}}/"
+          }
+        },
+        {
+          "name": "DELETE Question",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/quizzes/{{quiz_id}}/questions/{{question_id}}/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Enrollments",
+      "item": [
+        {
+          "name": "GET My Enrollments",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/enrollments/"
+          }
+        },
+        {
+          "name": "GET Enrollment Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/enrollments/{{enrollment_id}}/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lesson Progress",
+      "item": [
+        {
+          "name": "POST Mark Lesson Complete",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/lessons/{{lesson_id}}/complete/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Course Reviews",
+      "item": [
+        {
+          "name": "GET Course Reviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/reviews/"
+          }
+        },
+        {
+          "name": "POST Course Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"review_text\": \"Excellent course!\"\n}"
+            },
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/reviews/"
+          }
+        },
+        {
+          "name": "GET Course Review Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/reviews/{{review_id}}/"
+          }
+        },
+        {
+          "name": "PUT Course Review",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 4,\n  \"review_text\": \"Updated review text\"\n}"
+            },
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/reviews/{{review_id}}/"
+          }
+        },
+        {
+          "name": "DELETE Course Review",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/courses/{{course_id}}/reviews/{{review_id}}/"
+          }
+        }
+      ]
+    }
+  ]
+}

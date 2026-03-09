@@ -1,0 +1,8 @@
+(globalThis.TURBOPACK_CHUNK_LISTS || (globalThis.TURBOPACK_CHUNK_LISTS = [])).push({
+    script: typeof document === "object" ? document.currentScript : undefined,
+    chunks: [
+  "static/chunks/projects_lion-school_174472ae._.js",
+  "static/chunks/dc371__pnpm_bef775fe._.js"
+],
+    source: "dynamic"
+});

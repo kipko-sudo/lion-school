@@ -1,0 +1,13 @@
+__turbopack_load_page_chunks__("/_error", [
+  "static/chunks/ff41c_next_dist_compiled_3d2aa4ca._.js",
+  "static/chunks/ff41c_next_dist_shared_lib_92338dc3._.js",
+  "static/chunks/ff41c_next_dist_client_70dca844._.js",
+  "static/chunks/ff41c_next_dist_29c67bcf._.js",
+  "static/chunks/ff41c_next_error_7b3aefbb.js",
+  "static/chunks/[next]_entry_page-loader_ts_7fffe92b._.js",
+  "static/chunks/46ea5_react-dom_421f4a46._.js",
+  "static/chunks/dc371__pnpm_c0e4837d._.js",
+  "static/chunks/[root-of-the-server]__60756737._.js",
+  "static/chunks/projects_lion-school_pages__error_2da965e7._.js",
+  "static/chunks/turbopack-projects_lion-school_pages__error_a3ce98ed._.js"
+])
