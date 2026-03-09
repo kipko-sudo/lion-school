@@ -154,24 +154,39 @@ export default function StudentDashboard() {
     );
   }
 
+  const enrolledCount = enrollments.length;
+  const inProgressCount = enrollments.filter(
+    (e) => e.progress_percentage > 0 && e.progress_percentage < 100 && e.status !== 'completed'
+  ).length;
+  const completedCount = enrollments.filter(
+    (e) => e.status === 'completed' || e.progress_percentage >= 100
+  ).length;
+  const availableCount = Math.max(availableCourses.length - enrolledCount, 0);
+
   const stats = [
     {
-      label: 'Courses Enrolled',
-      value: enrollments.length.toString(),
+      label: 'Enrolled Courses',
+      value: enrolledCount.toString(),
       icon: BookOpen,
       color: 'text-primary',
     },
     {
-      label: 'In Progress',
-      value: enrollments.filter((e) => e.status === 'in_progress').length.toString(),
+      label: 'Learning Now',
+      value: inProgressCount.toString(),
       icon: TrendingUp,
       color: 'text-accent',
     },
     {
       label: 'Completed',
-      value: enrollments.filter((e) => e.status === 'completed').length.toString(),
+      value: completedCount.toString(),
       icon: Award,
       color: 'text-green-500',
+    },
+    {
+      label: 'Available Courses',
+      value: availableCount.toString(),
+      icon: Users,
+      color: 'text-blue-500',
     },
   ];
 
@@ -291,7 +306,7 @@ export default function StudentDashboard() {
           </div>
 
           {/* Stats */}
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-4 gap-4">
             {stats.map((stat) => (
               <Card key={stat.label} className="p-6">
                 <div className="flex items-start justify-between mb-4">
