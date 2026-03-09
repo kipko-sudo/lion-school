@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -14,11 +14,17 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, user, isLoading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace(getDashboardPath(user.role));
+    }
+  }, [authLoading, user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +40,10 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  if (authLoading || user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -146,14 +156,6 @@ export default function LoginPage() {
               </Button>
             </Link>
 
-            {/* Demo Credentials */}
-            <div className="p-3 bg-secondary rounded-lg text-sm">
-              <p className="font-medium text-foreground mb-2">Demo Credentials:</p>
-              <div className="text-muted-foreground text-xs space-y-1">
-                <p>Student: student@example.com / password123</p>
-                <p>Lecturer: lecturer@example.com / password123</p>
-              </div>
-            </div>
           </div>
         </Card>
       </div>

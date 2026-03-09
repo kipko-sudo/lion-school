@@ -127,7 +127,7 @@ export default function CreateCoursePage() {
         description: 'Course created successfully',
       });
 
-      router.push(`/lecturer/courses/${response.data.id}`);
+      router.push(`/lecturer/courses/${response.data.id}/edit`);
     } catch (error) {
       const errorMessage = handleAPIError(error);
       toast({
