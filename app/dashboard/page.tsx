@@ -37,20 +37,33 @@ interface Enrollment {
     id: number;
     title: string;
     thumbnail_url: string;
-    instructor: {
+    instructor?: {
       first_name: string;
       last_name: string;
     };
   };
+  course_title?: string;
+  course_thumbnail?: string;
   status: string;
   progress_percentage: number;
   enrolled_at: string;
+}
+
+interface AvailableCourse {
+  id: number;
+  title: string;
+  thumbnail_url: string;
+  instructor?: {
+    first_name: string;
+    last_name: string;
+  };
 }
 
 export default function StudentDashboard() {
   const router = useRouter();
   const { user, logout, isLoading: authLoading } = useAuth();
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [availableCourses, setAvailableCourses] = useState<AvailableCourse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -64,10 +77,30 @@ export default function StudentDashboard() {
 
   // Fetch enrollments
   useEffect(() => {
-    const fetchEnrollments = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const response = await enrollmentsAPI.list();
-        setEnrollments(response.data.results || response.data);
+        const [enrollmentsResponse, coursesResponse] = await Promise.all([
+          enrollmentsAPI.list(),
+          coursesAPI.list({ page: 1, is_published: true }),
+        ]);
+
+        const enrollmentData = enrollmentsResponse.data.results || enrollmentsResponse.data || [];
+        const normalizedEnrollments: Enrollment[] = enrollmentData.map((enrollment: any) => {
+          if (typeof enrollment.course === 'object') return enrollment;
+          return {
+            ...enrollment,
+            course: {
+              id: enrollment.course,
+              title: enrollment.course_title || 'Course',
+              thumbnail_url: enrollment.course_thumbnail || '',
+            },
+          };
+        });
+
+        setEnrollments(normalizedEnrollments);
+
+        const coursesData = coursesResponse.data.results || coursesResponse.data || [];
+        setAvailableCourses(coursesData);
       } catch (err) {
         setError(handleAPIError(err));
       } finally {
@@ -76,7 +109,7 @@ export default function StudentDashboard() {
     };
 
     if (user) {
-      fetchEnrollments();
+      fetchDashboardData();
     }
   }, [user]);
 
@@ -301,9 +334,31 @@ export default function StudentDashboard() {
                 <p className="text-muted-foreground mb-6">
                   Start your learning journey by enrolling in a course
                 </p>
-                <Link href="/courses">
-                  <Button>Explore Courses</Button>
-                </Link>
+                {availableCourses.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="grid md:grid-cols-3 gap-4 text-left">
+                      {availableCourses.slice(0, 3).map((course) => (
+                        <Link key={course.id} href={`/courses/${course.id}`}>
+                          <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer">
+                            <p className="font-semibold line-clamp-2">{course.title}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {course.instructor
+                                ? `by ${course.instructor.first_name} ${course.instructor.last_name}`
+                                : 'Published course'}
+                            </p>
+                          </Card>
+                        </Link>
+                      ))}
+                    </div>
+                    <Link href="/courses">
+                      <Button>Explore All Courses</Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <Link href="/courses">
+                    <Button>Explore Courses</Button>
+                  </Link>
+                )}
               </Card>
             ) : (
               <div className="grid md:grid-cols-3 gap-6">
@@ -333,10 +388,11 @@ export default function StudentDashboard() {
                         <h3 className="font-bold text-foreground text-balance line-clamp-2">
                           {enrollment.course.title}
                         </h3>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          by {enrollment.course.instructor.first_name}{' '}
-                          {enrollment.course.instructor.last_name}
-                        </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                          by {enrollment.course.instructor
+                            ? `${enrollment.course.instructor.first_name} ${enrollment.course.instructor.last_name}`
+                            : 'Instructor'}
+                          </p>
                       </div>
 
                       {/* Progress Bar */}
