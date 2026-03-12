@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.auth import get_user_model, authenticate
 from django.shortcuts import get_object_or_404
+from django.db.models import Max
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import (
     Course, Module, Lesson, Quiz, Question, QuizSubmission, Answer,
@@ -214,7 +215,15 @@ class ModuleViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         course_id = self.kwargs.get('course_pk')
         course = get_object_or_404(Course, id=course_id)
-        serializer.save(course=course)
+        order = serializer.validated_data.get('order')
+        if not order or order <= 0:
+            max_order = (
+                Module.objects.filter(course=course)
+                .aggregate(max_order=Max('order'))
+                .get('max_order')
+            )
+            order = (max_order or 0) + 1
+        serializer.save(course=course, order=order)
 
 
 # ============================================================================

@@ -8,21 +8,8 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth-context';
 import { coursesAPI, handleAPIError } from '@/lib/api-client';
+import Markdown from '@/components/markdown';
 import { ArrowLeft, BookOpen, Clock, Loader2, Star, Users } from 'lucide-react';
-
-interface LessonSummary {
-  id: number;
-  title: string;
-  lesson_type: string;
-}
-
-interface ModuleItem {
-  id: number;
-  title: string;
-  description: string;
-  order: number;
-  lessons: LessonSummary[];
-}
 
 interface CourseDetail {
   id: number;
@@ -52,7 +39,6 @@ export default function CourseDetailPage() {
   const { user, isAuthenticated } = useAuth();
 
   const [course, setCourse] = useState<CourseDetail | null>(null);
-  const [modules, setModules] = useState<ModuleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [error, setError] = useState('');
@@ -61,13 +47,8 @@ export default function CourseDetailPage() {
     if (!courseId || Number.isNaN(courseId)) return;
 
     try {
-      const [courseResponse, modulesResponse] = await Promise.all([
-        coursesAPI.detail(courseId),
-        coursesAPI.getModules(courseId),
-      ]);
-
+      const courseResponse = await coursesAPI.detail(courseId);
       setCourse(courseResponse.data);
-      setModules(modulesResponse.data.results || modulesResponse.data || []);
       setError('');
     } catch (err) {
       setError(handleAPIError(err));
@@ -78,16 +59,12 @@ export default function CourseDetailPage() {
 
   useEffect(() => {
     fetchCourseData();
-  }, [courseId]);
-
-  const sortedModules = useMemo(
-    () => [...modules].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
-    [modules]
-  );
+  }, [courseId, user?.role]);
 
   const isStudent = user?.role === 'student';
   const isLecturer = user?.role === 'lecturer';
   const isEnrolled = Boolean(course?.enrollment_status?.enrolled);
+  const canViewContent = isLecturer || isEnrolled;
 
   const handleEnroll = async () => {
     if (!isAuthenticated) {
@@ -155,35 +132,27 @@ export default function CourseDetailPage() {
             <div className="p-6 space-y-4">
               <Badge variant="outline">{course.category}</Badge>
               <h1 className="text-3xl font-bold text-foreground">{course.title}</h1>
-              <p className="text-muted-foreground">{course.description}</p>
+              <Markdown content={course.description} className="text-muted-foreground" />
             </div>
           </Card>
 
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Course Content</h2>
-            {sortedModules.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No modules have been added yet.</p>
+            {!canViewContent ? (
+              <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                Enroll in this course to unlock the full module content.
+              </div>
             ) : (
-              <div className="space-y-3">
-                {sortedModules.map((module) => (
-                  <div key={module.id} className="border rounded-lg p-4">
-                    <h3 className="font-semibold">
-                      {module.order}. {module.title}
-                    </h3>
-                    {module.description && (
-                      <p className="text-sm text-muted-foreground mt-1">{module.description}</p>
-                    )}
-                    {module.lessons?.length > 0 && (
-                      <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
-                        {module.lessons.map((lesson) => (
-                          <li key={lesson.id}>
-                            • {lesson.title} ({lesson.lesson_type})
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ))}
+              <div className="rounded-lg border p-6 flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-semibold">Ready to continue learning?</p>
+                  <p className="text-sm text-muted-foreground">
+                    Open the content page with the module sidebar and lesson list.
+                  </p>
+                </div>
+                <Link href={`/courses/${course.id}/content`}>
+                  <Button>Open Course Content</Button>
+                </Link>
               </div>
             )}
           </Card>
@@ -251,4 +220,3 @@ export default function CourseDetailPage() {
     </div>
   );
 }
-

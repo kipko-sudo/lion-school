@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth-context';
 import { coursesAPI, handleAPIError } from '@/lib/api-client';
+import Markdown from '@/components/markdown';
 import { ArrowLeft, BookOpen, Loader2, Plus, Trash2 } from 'lucide-react';
 
 interface LessonSummary {
@@ -177,7 +178,7 @@ export default function CourseContentPage() {
               />
             </div>
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Description (Markdown supported)</Label>
               <Textarea
                 id="description"
                 placeholder="What students will learn in this module..."
@@ -223,7 +224,10 @@ export default function CourseContentPage() {
                         {module.order}. {module.title}
                       </p>
                       {module.description && (
-                        <p className="text-sm text-muted-foreground mt-1">{module.description}</p>
+                        <Markdown
+                          content={module.description}
+                          className="text-sm text-muted-foreground mt-1"
+                        />
                       )}
                       <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                         <BookOpen className="w-3 h-3" />
@@ -249,4 +253,3 @@ export default function CourseContentPage() {
     </div>
   );
 }
-
