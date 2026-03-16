@@ -56,6 +56,9 @@ urlpatterns = [
     # Lesson progress
     path('lessons/<int:lesson_id>/complete/', 
          views.LessonProgressView.as_view(), name='lesson-complete'),
+
+    # Lecturer students overview
+    path('lecturer/students/', views.LecturerStudentsView.as_view(), name='lecturer-students'),
     
     # Course reviews
     path('courses/<int:course_pk>/reviews/',

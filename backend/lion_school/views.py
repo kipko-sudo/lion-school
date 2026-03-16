@@ -21,7 +21,7 @@ from .serializers import (
     CourseListSerializer, CourseDetailSerializer, CourseCreateUpdateSerializer,
     QuizSerializer, QuizDetailSerializer, QuestionSerializer, QuestionDetailSerializer,
     QuizSubmissionSerializer, EnrollmentListSerializer, EnrollmentDetailSerializer, LessonProgressSerializer,
-    CourseReviewSerializer
+    CourseReviewSerializer, LecturerEnrollmentSerializer
 )
 
 User = get_user_model()
@@ -344,6 +344,27 @@ class EnrollmentViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         return Enrollment.objects.filter(student=self.request.user).select_related('course')
+
+
+class LecturerStudentsView(APIView):
+    """Students enrolled in lecturer's courses"""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'lecturer':
+            return Response(
+                {'error': 'Only lecturers can view enrolled students.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        enrollments = (
+            Enrollment.objects
+            .filter(course__instructor=request.user)
+            .select_related('student', 'course')
+            .order_by('-enrolled_at')
+        )
+        serializer = LecturerEnrollmentSerializer(enrollments, many=True)
+        return Response(serializer.data)
 
 
 class LessonProgressView(APIView):

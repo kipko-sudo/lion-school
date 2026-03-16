@@ -279,6 +279,20 @@ class EnrollmentListSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class LecturerEnrollmentSerializer(serializers.ModelSerializer):
+    """Enrollment serializer for lecturer student views"""
+
+    student = UserSerializer(read_only=True)
+    course_title = serializers.CharField(source='course.title', read_only=True)
+    course_id = serializers.IntegerField(source='course.id', read_only=True)
+
+    class Meta:
+        model = Enrollment
+        fields = ['id', 'student', 'course_id', 'course_title',
+                  'status', 'progress_percentage', 'enrolled_at']
+        read_only_fields = fields
+
+
 # ============================================================================
 # REVIEW SERIALIZERS
 # ============================================================================
