@@ -57,6 +57,10 @@ urlpatterns = [
     path('lessons/<int:lesson_id>/complete/', 
          views.LessonProgressView.as_view(), name='lesson-complete'),
 
+    # Module quiz & completion
+    path('modules/<int:module_id>/quiz/', views.ModuleQuizView.as_view(), name='module-quiz'),
+    path('modules/<int:module_id>/complete/', views.ModuleCompleteView.as_view(), name='module-complete'),
+
     # Lecturer students overview
     path('lecturer/students/', views.LecturerStudentsView.as_view(), name='lecturer-students'),
     

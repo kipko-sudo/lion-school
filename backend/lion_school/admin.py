@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     CustomUser, Course, Module, Lesson, Quiz, Question, QuizSubmission, Answer,
-    Enrollment, LessonProgress, CourseReview
+    Enrollment, LessonProgress, CourseReview, ModuleQuizQuestion, ModuleProgress
 )
 
 
@@ -176,7 +176,25 @@ class LessonProgressAdmin(admin.ModelAdmin):
     list_display = ['student', 'lesson', 'progress_percentage', 'is_completed', 'started_at']
     list_filter = ['is_completed', 'lesson__module__course', 'started_at']
     search_fields = ['student__username', 'lesson__title']
-    readonly_fields = ['started_at', 'completed_at', 'last_accessed_at']
+
+
+@admin.register(ModuleQuizQuestion)
+class ModuleQuizQuestionAdmin(admin.ModelAdmin):
+    """Admin interface for module quiz questions"""
+
+    list_display = ['module', 'order', 'question_text', 'created_at']
+    list_filter = ['module__course', 'module']
+    search_fields = ['question_text', 'module__title']
+
+
+@admin.register(ModuleProgress)
+class ModuleProgressAdmin(admin.ModelAdmin):
+    """Admin interface for module progress"""
+
+    list_display = ['student', 'module', 'is_completed', 'attempts', 'last_score', 'updated_at']
+    list_filter = ['is_completed', 'module__course']
+    search_fields = ['student__username', 'module__title']
+    readonly_fields = ['completed_at']
 
 
 @admin.register(CourseReview)

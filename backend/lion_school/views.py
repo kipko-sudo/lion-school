@@ -14,14 +14,15 @@ from django.db.models import Max
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import (
     Course, Module, Lesson, Quiz, Question, QuizSubmission, Answer,
-    Enrollment, LessonProgress, CourseReview
+    Enrollment, LessonProgress, CourseReview, ModuleQuizQuestion, ModuleProgress
 )
 from .serializers import (
     ModuleSerializer, UserDetailSerializer, UserRegistrationSerializer,
     CourseListSerializer, CourseDetailSerializer, CourseCreateUpdateSerializer,
     QuizSerializer, QuizDetailSerializer, QuestionSerializer, QuestionDetailSerializer,
     QuizSubmissionSerializer, EnrollmentListSerializer, EnrollmentDetailSerializer, LessonProgressSerializer,
-    CourseReviewSerializer, LecturerEnrollmentSerializer
+    CourseReviewSerializer, LecturerEnrollmentSerializer,
+    ModuleQuizQuestionSerializer, ModuleQuizQuestionPublicSerializer
 )
 
 User = get_user_model()
@@ -225,6 +226,111 @@ class ModuleViewSet(viewsets.ModelViewSet):
             order = (max_order or 0) + 1
         serializer.save(course=course, order=order)
 
+
+# ============================================================================
+# MODULE QUIZ VIEWS
+# ============================================================================
+
+class ModuleQuizView(APIView):
+    """List or create module quiz questions"""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, module_id):
+        module = get_object_or_404(Module, id=module_id)
+        questions = ModuleQuizQuestion.objects.filter(module=module).order_by('order')
+        if request.user.is_authenticated and request.user.role == 'lecturer':
+            serializer = ModuleQuizQuestionSerializer(questions, many=True)
+        else:
+            serializer = ModuleQuizQuestionPublicSerializer(questions, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, module_id):
+        if request.user.role != 'lecturer':
+            return Response(
+                {'error': 'Only lecturers can create module quiz questions.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        module = get_object_or_404(Module, id=module_id)
+        serializer = ModuleQuizQuestionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(module=module)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ModuleCompleteView(APIView):
+    """Submit module quiz and mark completion"""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, module_id):
+        if request.user.role != 'student':
+            return Response(
+                {'error': 'Only students can complete modules.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        module = get_object_or_404(Module, id=module_id)
+        questions = list(ModuleQuizQuestion.objects.filter(module=module).order_by('order'))
+        if not questions:
+            return Response(
+                {'error': 'No quiz questions configured for this module.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        answers = request.data.get('answers', [])
+        answer_map = {int(a.get('question_id')): str(a.get('answer_text', '')).strip()
+                      for a in answers if a.get('question_id')}
+
+        total = len(questions)
+        correct = 0
+        for question in questions:
+            expected = str(question.correct_answer).strip().lower()
+            provided = str(answer_map.get(question.id, '')).strip().lower()
+            if expected == provided:
+                correct += 1
+
+        percentage = (correct / total) * 100 if total else 0
+        passed = percentage >= 70
+
+        progress, _ = ModuleProgress.objects.get_or_create(
+            student=request.user,
+            module=module
+        )
+        progress.attempts += 1
+        progress.last_score = percentage
+        if passed:
+            progress.is_completed = True
+            progress.completed_at = progress.completed_at or django.utils.timezone.now()
+        progress.save()
+
+        # Update enrollment progress for this course
+        course = module.course
+        enrollment = Enrollment.objects.filter(student=request.user, course=course).first()
+        total_modules = Module.objects.filter(course=course).count()
+        completed_modules = ModuleProgress.objects.filter(
+            student=request.user,
+            module__course=course,
+            is_completed=True
+        ).count()
+        course_progress = (completed_modules / total_modules) * 100 if total_modules else 0
+        if enrollment:
+            enrollment.progress_percentage = course_progress
+            if course_progress >= 100:
+                enrollment.status = 'completed'
+                enrollment.is_completed = True
+                enrollment.completed_at = enrollment.completed_at or django.utils.timezone.now()
+            enrollment.save()
+
+        return Response({
+            'passed': passed,
+            'score': percentage,
+            'correct': correct,
+            'total': total,
+            'attempts': progress.attempts,
+            'module_completed': progress.is_completed,
+            'course_progress_percentage': course_progress,
+        })
 
 # ============================================================================
 # QUIZ VIEWS

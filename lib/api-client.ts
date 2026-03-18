@@ -7,7 +7,7 @@ import axios, { AxiosInstance, AxiosError, AxiosResponse } from 'axios';
 import Cookies from 'js-cookie';
 
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://lionschool.pythonanywhere.com/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
 
 /**
  * Create and configure axios instance
@@ -211,6 +211,17 @@ export const progressAPI = {
 
   getLessonProgress: (enrollmentId: number) =>
     apiClient.get(`/enrollments/${enrollmentId}/progress/`),
+};
+
+// ============================================================================
+// Module Quiz API
+// ============================================================================
+
+export const moduleQuizAPI = {
+  getQuestions: (moduleId: number) =>
+    apiClient.get(`/modules/${moduleId}/quiz/`),
+  submit: (moduleId: number, answers: Array<{ question_id: number; answer_text: string }>) =>
+    apiClient.post(`/modules/${moduleId}/complete/`, { answers }),
 };
 
 // ============================================================================

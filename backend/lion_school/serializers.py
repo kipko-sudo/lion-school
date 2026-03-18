@@ -7,7 +7,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import (
     Course, Module, Lesson, Quiz, Question, QuizSubmission, Answer,
-    Enrollment, LessonProgress, CourseReview, CustomUser
+    Enrollment, LessonProgress, CourseReview, CustomUser, ModuleQuizQuestion, ModuleProgress
 )
 
 User = get_user_model()
@@ -76,6 +76,36 @@ class LessonSerializer(serializers.ModelSerializer):
                   'video_url', 'video_duration_seconds', 'resource_url',
                   'is_free_preview', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+
+class ModuleQuizQuestionSerializer(serializers.ModelSerializer):
+    """Serializer for module quiz questions (lecturer view)"""
+
+    class Meta:
+        model = ModuleQuizQuestion
+        fields = ['id', 'question_text', 'order', 'options', 'correct_answer', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+
+class ModuleQuizQuestionPublicSerializer(serializers.ModelSerializer):
+    """Serializer for module quiz questions (student view)"""
+
+    class Meta:
+        model = ModuleQuizQuestion
+        fields = ['id', 'question_text', 'order', 'options', 'created_at']
+        read_only_fields = fields
+
+
+class ModuleProgressSerializer(serializers.ModelSerializer):
+    """Serializer for module progress"""
+
+    module_title = serializers.CharField(source='module.title', read_only=True)
+
+    class Meta:
+        model = ModuleProgress
+        fields = ['id', 'module', 'module_title', 'is_completed',
+                  'attempts', 'last_score', 'completed_at', 'updated_at']
+        read_only_fields = fields
 
 
 class ModuleSerializer(serializers.ModelSerializer):

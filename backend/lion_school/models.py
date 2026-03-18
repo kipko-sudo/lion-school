@@ -162,6 +162,49 @@ class Lesson(models.Model):
 
 
 # ============================================================================
+# MODULE QUIZZES & PROGRESS
+# ============================================================================
+
+class ModuleQuizQuestion(models.Model):
+    """Quiz question tied to a module"""
+
+    module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='quiz_questions')
+    question_text = models.TextField()
+    order = models.PositiveIntegerField(default=0)
+    options = models.JSONField(default=dict, blank=True)
+    correct_answer = models.CharField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['module', 'order']
+        unique_together = ['module', 'order']
+
+    def __str__(self):
+        return f"{self.module.title} Q{self.order}"
+
+
+class ModuleProgress(models.Model):
+    """Track student completion per module"""
+
+    student = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='module_progress')
+    module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='student_progress')
+    is_completed = models.BooleanField(default=False)
+    attempts = models.PositiveIntegerField(default=0)
+    last_score = models.FloatField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['student', 'module']
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"{self.student.get_full_name()} - {self.module.title}"
+
+
+# ============================================================================
 # QUIZZES & ASSESSMENTS
 # ============================================================================
 

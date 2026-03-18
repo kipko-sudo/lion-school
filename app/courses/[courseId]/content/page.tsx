@@ -6,8 +6,17 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useAuth } from '@/lib/auth-context';
-import { coursesAPI, handleAPIError } from '@/lib/api-client';
+import { coursesAPI, handleAPIError, moduleQuizAPI } from '@/lib/api-client';
 import Markdown from '@/components/markdown';
 import { ArrowLeft, BookOpen, Loader2 } from 'lucide-react';
 
@@ -34,6 +43,13 @@ interface CourseDetail {
   } | null;
 }
 
+interface ModuleQuizQuestion {
+  id: number;
+  question_text: string;
+  options: Record<string, string>;
+  order: number;
+}
+
 export default function CourseContentPage() {
   const params = useParams<{ courseId: string }>();
   const courseId = Number(params.courseId);
@@ -45,6 +61,19 @@ export default function CourseContentPage() {
   const [activeModuleId, setActiveModuleId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [quizOpen, setQuizOpen] = useState(false);
+  const [quizLoading, setQuizLoading] = useState(false);
+  const [quizError, setQuizError] = useState('');
+  const [quizResult, setQuizResult] = useState<null | {
+    passed: boolean;
+    score: number;
+    correct: number;
+    total: number;
+    attempts: number;
+    course_progress_percentage: number;
+  }>(null);
+  const [quizQuestions, setQuizQuestions] = useState<ModuleQuizQuestion[]>([]);
+  const [quizAnswers, setQuizAnswers] = useState<Record<number, string>>({});
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -82,6 +111,7 @@ export default function CourseContentPage() {
   const isLecturer = user?.role === 'lecturer';
   const isEnrolled = Boolean(course?.enrollment_status?.enrolled);
   const canViewContent = isLecturer || isEnrolled;
+  const isStudent = user?.role === 'student';
 
   const sortedModules = useMemo(
     () => [...modules].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
@@ -89,6 +119,45 @@ export default function CourseContentPage() {
   );
 
   const activeModule = sortedModules.find((m) => m.id === activeModuleId) || sortedModules[0];
+
+  const openQuiz = async () => {
+    if (!activeModule) return;
+    setQuizOpen(true);
+    setQuizLoading(true);
+    setQuizError('');
+    setQuizResult(null);
+    try {
+      const response = await moduleQuizAPI.getQuestions(activeModule.id);
+      const data = response.data || [];
+      setQuizQuestions(data);
+      setQuizAnswers({});
+      if (data.length === 0) {
+        setQuizError('No quiz questions configured for this module yet.');
+      }
+    } catch (err) {
+      setQuizError(handleAPIError(err));
+    } finally {
+      setQuizLoading(false);
+    }
+  };
+
+  const submitQuiz = async () => {
+    if (!activeModule) return;
+    setQuizLoading(true);
+    setQuizError('');
+    try {
+      const answers = quizQuestions.map((q) => ({
+        question_id: q.id,
+        answer_text: quizAnswers[q.id] || '',
+      }));
+      const response = await moduleQuizAPI.submit(activeModule.id, answers);
+      setQuizResult(response.data);
+    } catch (err) {
+      setQuizError(handleAPIError(err));
+    } finally {
+      setQuizLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -179,6 +248,11 @@ export default function CourseContentPage() {
                     className="text-sm text-muted-foreground mt-2"
                   />
                 )}
+                {isStudent && (
+                  <div className="mt-4">
+                    <Button onClick={openQuiz}>Complete Module</Button>
+                  </div>
+                )}
               </Card>
 
               <Card className="p-6">
@@ -214,7 +288,83 @@ export default function CourseContentPage() {
           )}
         </div>
       </div>
+
+      <Dialog open={quizOpen} onOpenChange={setQuizOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Module Quiz</DialogTitle>
+            <DialogDescription>
+              Complete this short quiz to mark the module as done. You can retry as many times as you need.
+            </DialogDescription>
+          </DialogHeader>
+
+          {quizLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Loading quiz...
+            </div>
+          ) : quizError ? (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+              {quizError}
+            </div>
+          ) : quizResult ? (
+            <div className="space-y-2 text-sm">
+              <p>
+                Score: <span className="font-semibold">{quizResult.score.toFixed(0)}%</span> (
+                {quizResult.correct}/{quizResult.total})
+              </p>
+              <p>
+                Status:{' '}
+                <span className={quizResult.passed ? 'text-primary' : 'text-destructive'}>
+                  {quizResult.passed ? 'Passed' : 'Failed'}
+                </span>
+              </p>
+              <p className="text-muted-foreground">
+                Course progress: {quizResult.course_progress_percentage.toFixed(0)}%
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {quizQuestions.map((q, index) => (
+                <div key={q.id} className="space-y-2">
+                  <p className="font-semibold">
+                    {index + 1}. {q.question_text}
+                  </p>
+                  <RadioGroup
+                    value={quizAnswers[q.id] || ''}
+                    onValueChange={(value) =>
+                      setQuizAnswers((prev) => ({ ...prev, [q.id]: value }))
+                    }
+                    className="space-y-2"
+                  >
+                    {Object.entries(q.options || {}).map(([key, value]) => (
+                      <div key={key} className="flex items-center gap-2">
+                        <RadioGroupItem value={key} id={`${q.id}-${key}`} />
+                        <label htmlFor={`${q.id}-${key}`} className="text-sm">
+                          {key}. {value}
+                        </label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            {quizResult && (
+              <Button variant="outline" onClick={openQuiz}>
+                Retry Quiz
+              </Button>
+            )}
+            {!quizResult && !quizError && (
+              <Button onClick={submitQuiz} disabled={quizLoading || quizQuestions.length === 0}>
+                Submit Quiz
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
