@@ -5,12 +5,13 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/lib/auth-context';
-import { coursesAPI, handleAPIError } from '@/lib/api-client';
+import { coursesAPI, handleAPIError, moduleQuizAPI } from '@/lib/api-client';
 import Markdown from '@/components/markdown';
 import { ArrowLeft, BookOpen, Loader2, Plus, Trash2 } from 'lucide-react';
 
@@ -35,6 +36,14 @@ interface CourseSummary {
   is_published: boolean;
 }
 
+interface ModuleQuizQuestion {
+  id: number;
+  question_text: string;
+  order: number;
+  options: Record<string, string>;
+  correct_answer?: string;
+}
+
 export default function CourseContentPage() {
   const params = useParams<{ courseId: string }>();
   const courseId = Number(params.courseId);
@@ -43,6 +52,7 @@ export default function CourseContentPage() {
 
   const [course, setCourse] = useState<CourseSummary | null>(null);
   const [modules, setModules] = useState<ModuleItem[]>([]);
+  const [activeModuleId, setActiveModuleId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -50,6 +60,18 @@ export default function CourseContentPage() {
     title: '',
     description: '',
     order: '',
+  });
+  const [quizQuestions, setQuizQuestions] = useState<ModuleQuizQuestion[]>([]);
+  const [quizLoading, setQuizLoading] = useState(false);
+  const [quizError, setQuizError] = useState('');
+  const [questionForm, setQuestionForm] = useState({
+    question_text: '',
+    order: '',
+    optionA: '',
+    optionB: '',
+    optionC: '',
+    optionD: '',
+    correct_answer: 'A',
   });
 
   useEffect(() => {
@@ -70,6 +92,9 @@ export default function CourseContentPage() {
       setCourse(courseResponse.data);
       const moduleData = modulesResponse.data.results || modulesResponse.data || [];
       setModules(moduleData);
+      if (moduleData.length > 0 && !activeModuleId) {
+        setActiveModuleId(moduleData[0].id);
+      }
       setError('');
     } catch (err) {
       setError(handleAPIError(err));
@@ -88,6 +113,37 @@ export default function CourseContentPage() {
     () => [...modules].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
     [modules]
   );
+  const activeModule = sortedModules.find((m) => m.id === activeModuleId) || null;
+
+  const fetchQuizQuestions = async (moduleId: number) => {
+    setQuizLoading(true);
+    setQuizError('');
+    try {
+      const response = await moduleQuizAPI.getQuestions(moduleId);
+      setQuizQuestions(response.data || []);
+    } catch (err) {
+      setQuizError(handleAPIError(err));
+    } finally {
+      setQuizLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeModuleId) {
+      fetchQuizQuestions(activeModuleId);
+    } else {
+      setQuizQuestions([]);
+    }
+  }, [activeModuleId]);
+
+  useEffect(() => {
+    if (!activeModuleId) return;
+    if (questionForm.order) return;
+    setQuestionForm((prev) => ({
+      ...prev,
+      order: quizQuestions.length ? String(quizQuestions.length + 1) : '1',
+    }));
+  }, [activeModuleId, quizQuestions.length]);
 
   const handleCreateModule = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -113,13 +169,61 @@ export default function CourseContentPage() {
     }
   };
 
+  const handleAddQuestion = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!activeModuleId) return;
+
+    setQuizLoading(true);
+    setQuizError('');
+    try {
+      const desiredOrder = Number(questionForm.order) || quizQuestions.length + 1;
+      if (quizQuestions.some((q) => q.order === desiredOrder)) {
+        setQuizError(`Order ${desiredOrder} is already used. Choose a new order.`);
+        return;
+      }
+      const options = {
+        A: questionForm.optionA,
+        B: questionForm.optionB,
+        C: questionForm.optionC,
+        D: questionForm.optionD,
+      };
+      await moduleQuizAPI.createQuestion(activeModuleId, {
+        question_text: questionForm.question_text.trim(),
+        order: desiredOrder,
+        options,
+        correct_answer: questionForm.correct_answer,
+      });
+
+      setQuestionForm({
+        question_text: '',
+        order: '',
+        optionA: '',
+        optionB: '',
+        optionC: '',
+        optionD: '',
+        correct_answer: 'A',
+      });
+      await fetchQuizQuestions(activeModuleId);
+    } catch (err) {
+      setQuizError(handleAPIError(err));
+    } finally {
+      setQuizLoading(false);
+    }
+  };
+
   const handleDeleteModule = async (moduleId: number) => {
     const confirmed = window.confirm('Delete this module? This action cannot be undone.');
     if (!confirmed) return;
 
     try {
       await coursesAPI.deleteModule(courseId, moduleId);
-      setModules((prev) => prev.filter((m) => m.id !== moduleId));
+      setModules((prev) => {
+        const next = prev.filter((m) => m.id !== moduleId);
+        if (activeModuleId === moduleId) {
+          setActiveModuleId(next[0]?.id ?? null);
+        }
+        return next;
+      });
     } catch (err) {
       setError(handleAPIError(err));
     }
@@ -217,7 +321,21 @@ export default function CourseContentPage() {
           ) : (
             <div className="space-y-3">
               {sortedModules.map((module) => (
-                <div key={module.id} className="border rounded-lg p-4">
+                <div
+                  key={module.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setActiveModuleId(module.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setActiveModuleId(module.id);
+                    }
+                  }}
+                  className={`border rounded-lg p-4 text-left transition-colors cursor-pointer ${
+                    module.id === activeModuleId ? 'bg-primary/5 border-primary' : 'hover:bg-secondary'
+                  }`}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold">
@@ -239,13 +357,157 @@ export default function CourseContentPage() {
                       variant="ghost"
                       size="icon"
                       className="text-destructive"
-                      onClick={() => handleDeleteModule(module.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteModule(module.id);
+                      }}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </Card>
+
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold mb-4">Module Quiz Questions</h2>
+          {!activeModule ? (
+            <p className="text-sm text-muted-foreground">Select a module to manage its quiz.</p>
+          ) : (
+            <div className="space-y-4">
+              {quizError && (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                  {quizError}
+                </div>
+              )}
+
+              <form onSubmit={handleAddQuestion} className="space-y-4">
+                <div>
+                  <Label htmlFor="question_text">Question</Label>
+                  <Textarea
+                    id="question_text"
+                    value={questionForm.question_text}
+                    onChange={(e) =>
+                      setQuestionForm((prev) => ({ ...prev, question_text: e.target.value }))
+                    }
+                    rows={3}
+                    required
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="optionA">Option A</Label>
+                    <Input
+                      id="optionA"
+                      value={questionForm.optionA}
+                      onChange={(e) =>
+                        setQuestionForm((prev) => ({ ...prev, optionA: e.target.value }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="optionB">Option B</Label>
+                    <Input
+                      id="optionB"
+                      value={questionForm.optionB}
+                      onChange={(e) =>
+                        setQuestionForm((prev) => ({ ...prev, optionB: e.target.value }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="optionC">Option C</Label>
+                    <Input
+                      id="optionC"
+                      value={questionForm.optionC}
+                      onChange={(e) =>
+                        setQuestionForm((prev) => ({ ...prev, optionC: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="optionD">Option D</Label>
+                    <Input
+                      id="optionD"
+                      value={questionForm.optionD}
+                      onChange={(e) =>
+                        setQuestionForm((prev) => ({ ...prev, optionD: e.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="order">Order</Label>
+                    <Input
+                      id="order"
+                      type="number"
+                      min="1"
+                      value={questionForm.order}
+                      onChange={(e) =>
+                        setQuestionForm((prev) => ({ ...prev, order: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Correct Answer</Label>
+                    <Select
+                      value={questionForm.correct_answer}
+                      onValueChange={(value) =>
+                        setQuestionForm((prev) => ({ ...prev, correct_answer: value }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select answer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="A">A</SelectItem>
+                        <SelectItem value="B">B</SelectItem>
+                        <SelectItem value="C">C</SelectItem>
+                        <SelectItem value="D">D</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <Button type="submit" disabled={quizLoading}>
+                  {quizLoading ? 'Saving...' : 'Add Question'}
+                </Button>
+              </form>
+
+              <div className="space-y-3">
+                {quizLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading questions...</p>
+                ) : quizQuestions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No questions added yet.</p>
+                ) : (
+                  quizQuestions.map((q, idx) => (
+                    <div key={q.id} className="border rounded-lg p-4">
+                      <p className="font-semibold">
+                        {idx + 1}. {q.question_text}
+                      </p>
+                      <div className="mt-2 grid md:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                        {Object.entries(q.options || {}).map(([key, value]) => (
+                          <div key={key}>
+                            {key}. {value}
+                          </div>
+                        ))}
+                      </div>
+                      {q.correct_answer && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Correct: {q.correct_answer}
+                        </p>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           )}
         </Card>

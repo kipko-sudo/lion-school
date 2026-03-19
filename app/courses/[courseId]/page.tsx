@@ -84,6 +84,27 @@ export default function CourseDetailPage() {
     }
   };
 
+  const handleUnenroll = async () => {
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+    if (!isStudent) return;
+
+    const confirmed = window.confirm('Unenroll from this course? Your progress will be lost.');
+    if (!confirmed) return;
+
+    setIsEnrolling(true);
+    try {
+      await coursesAPI.unenroll(courseId);
+      await fetchCourseData();
+    } catch (err) {
+      setError(handleAPIError(err));
+    } finally {
+      setIsEnrolling(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -177,7 +198,7 @@ export default function CourseDetailPage() {
               <span className="text-muted-foreground">Students</span>
               <span className="font-semibold inline-flex items-center gap-1">
                 <Users className="w-4 h-4" />
-                {course.total_students.toLocaleString()}
+                {course.total_students.toLocaleString()} enrolled
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -195,14 +216,26 @@ export default function CourseDetailPage() {
             </div>
 
             {isStudent && (
-              <Button
-                onClick={handleEnroll}
-                disabled={isEnrolling || isEnrolled}
-                className="w-full gap-2"
-              >
-                {isEnrolling && <Loader2 className="w-4 h-4 animate-spin" />}
-                {isEnrolled ? 'Enrolled' : 'Enroll Now'}
-              </Button>
+              <div className="space-y-2">
+                <Button
+                  onClick={handleEnroll}
+                  disabled={isEnrolling || isEnrolled}
+                  className="w-full gap-2"
+                >
+                  {isEnrolling && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isEnrolled ? 'Enrolled' : 'Enroll Now'}
+                </Button>
+                {isEnrolled && (
+                  <Button
+                    onClick={handleUnenroll}
+                    disabled={isEnrolling}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Unenroll
+                  </Button>
+                )}
+              </div>
             )}
 
             {isLecturer && (

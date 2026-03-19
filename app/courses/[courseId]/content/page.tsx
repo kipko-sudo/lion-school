@@ -74,6 +74,7 @@ export default function CourseContentPage() {
   }>(null);
   const [quizQuestions, setQuizQuestions] = useState<ModuleQuizQuestion[]>([]);
   const [quizAnswers, setQuizAnswers] = useState<Record<number, string>>({});
+  const [completedModuleIds, setCompletedModuleIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -97,6 +98,15 @@ export default function CourseContentPage() {
         if (moduleData.length > 0) {
           setActiveModuleId(moduleData[0].id);
         }
+        if (user?.role === 'student' && courseData?.enrollment_status?.enrolled) {
+          const progressResponse = await moduleQuizAPI.getCourseProgress(courseId);
+          const completedIds = new Set(
+            (progressResponse.data || [])
+              .filter((p: any) => p.is_completed)
+              .map((p: any) => p.module_id)
+          );
+          setCompletedModuleIds(completedIds);
+        }
         setError('');
       } catch (err) {
         setError(handleAPIError(err));
@@ -119,6 +129,14 @@ export default function CourseContentPage() {
   );
 
   const activeModule = sortedModules.find((m) => m.id === activeModuleId) || sortedModules[0];
+  const activeModuleCompleted = activeModule ? completedModuleIds.has(activeModule.id) : false;
+  const activeModuleIndex = activeModule
+    ? sortedModules.findIndex((m) => m.id === activeModule.id)
+    : -1;
+  const nextModuleId =
+    activeModuleIndex >= 0 && activeModuleIndex < sortedModules.length - 1
+      ? sortedModules[activeModuleIndex + 1].id
+      : null;
 
   const openQuiz = async () => {
     if (!activeModule) return;
@@ -152,6 +170,9 @@ export default function CourseContentPage() {
       }));
       const response = await moduleQuizAPI.submit(activeModule.id, answers);
       setQuizResult(response.data);
+      if (response.data?.passed) {
+        setCompletedModuleIds((prev) => new Set(prev).add(activeModule.id));
+      }
     } catch (err) {
       setQuizError(handleAPIError(err));
     } finally {
@@ -249,8 +270,11 @@ export default function CourseContentPage() {
                   />
                 )}
                 {isStudent && (
-                  <div className="mt-4">
-                    <Button onClick={openQuiz}>Complete Module</Button>
+                  <div className="mt-4 flex items-center gap-3">
+                    <Button onClick={openQuiz}>
+                      {activeModuleCompleted ? 'Retake Quiz' : 'Complete Module'}
+                    </Button>
+                    {activeModuleCompleted && <Badge>Completed</Badge>}
                   </div>
                 )}
               </Card>
@@ -353,9 +377,21 @@ export default function CourseContentPage() {
 
           <DialogFooter className="gap-2">
             {quizResult && (
-              <Button variant="outline" onClick={openQuiz}>
-                Retry Quiz
-              </Button>
+              <>
+                {quizResult.passed && nextModuleId && (
+                  <Button
+                    onClick={() => {
+                      setActiveModuleId(nextModuleId);
+                      setQuizOpen(false);
+                    }}
+                  >
+                    Go to Next Module
+                  </Button>
+                )}
+                <Button variant="outline" onClick={openQuiz}>
+                  Retry Quiz
+                </Button>
+              </>
             )}
             {!quizResult && !quizError && (
               <Button onClick={submitQuiz} disabled={quizLoading || quizQuestions.length === 0}>

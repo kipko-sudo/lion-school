@@ -60,6 +60,7 @@ urlpatterns = [
     # Module quiz & completion
     path('modules/<int:module_id>/quiz/', views.ModuleQuizView.as_view(), name='module-quiz'),
     path('modules/<int:module_id>/complete/', views.ModuleCompleteView.as_view(), name='module-complete'),
+    path('courses/<int:course_id>/module-progress/', views.CourseModuleProgressView.as_view(), name='course-module-progress'),
 
     # Lecturer students overview
     path('lecturer/students/', views.LecturerStudentsView.as_view(), name='lecturer-students'),

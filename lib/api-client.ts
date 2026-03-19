@@ -109,6 +109,7 @@ export const coursesAPI = {
   delete: (courseId: number) => apiClient.delete(`/courses/${courseId}/`),
 
   enroll: (courseId: number) => apiClient.post(`/courses/${courseId}/enroll/`),
+  unenroll: (courseId: number) => apiClient.post(`/courses/${courseId}/unenroll/`),
 
   getProgress: (courseId: number) =>
     apiClient.get(`/courses/${courseId}/progress/`),
@@ -220,8 +221,12 @@ export const progressAPI = {
 export const moduleQuizAPI = {
   getQuestions: (moduleId: number) =>
     apiClient.get(`/modules/${moduleId}/quiz/`),
+  createQuestion: (moduleId: number, data: any) =>
+    apiClient.post(`/modules/${moduleId}/quiz/`, data),
   submit: (moduleId: number, answers: Array<{ question_id: number; answer_text: string }>) =>
     apiClient.post(`/modules/${moduleId}/complete/`, { answers }),
+  getCourseProgress: (courseId: number) =>
+    apiClient.get(`/courses/${courseId}/module-progress/`),
 };
 
 // ============================================================================

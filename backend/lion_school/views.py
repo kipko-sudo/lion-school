@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.auth import get_user_model, authenticate
 from django.shortcuts import get_object_or_404
-from django.db.models import Max
+from django.db.models import Max, F
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import (
     Course, Module, Lesson, Quiz, Question, QuizSubmission, Answer,
@@ -181,11 +181,39 @@ class CourseViewSet(viewsets.ModelViewSet):
                 {'message': 'Already enrolled in this course'},
                 status=status.HTTP_200_OK
             )
+
+        # Update course enrollment count
+        Course.objects.filter(id=course.id).update(total_students=F('total_students') + 1)
         
         return Response(
             {'message': 'Enrolled successfully', 'enrollment': EnrollmentListSerializer(enrollment).data},
             status=status.HTTP_201_CREATED
         )
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def unenroll(self, request, pk=None):
+        """Unenroll student from course"""
+        course = self.get_object()
+
+        if request.user.role != 'student':
+            return Response(
+                {'error': 'Only students can unenroll from courses'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        enrollment = Enrollment.objects.filter(student=request.user, course=course).first()
+        if not enrollment:
+            return Response(
+                {'message': 'Not enrolled in this course'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        enrollment.delete()
+        Course.objects.filter(id=course.id, total_students__gt=0).update(
+            total_students=F('total_students') - 1
+        )
+
+        return Response({'message': 'Unenrolled successfully'}, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def progress(self, request, pk=None):
@@ -331,6 +359,25 @@ class ModuleCompleteView(APIView):
             'module_completed': progress.is_completed,
             'course_progress_percentage': course_progress,
         })
+
+
+class CourseModuleProgressView(APIView):
+    """List module progress for the current student in a course"""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, course_id):
+        if request.user.role != 'student':
+            return Response(
+                {'error': 'Only students can view module progress.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        module_progress = (
+            ModuleProgress.objects
+            .filter(student=request.user, module__course_id=course_id)
+            .values('module_id', 'is_completed')
+        )
+        return Response(list(module_progress))
 
 # ============================================================================
 # QUIZ VIEWS

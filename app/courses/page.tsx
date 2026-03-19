@@ -246,7 +246,7 @@ export default function CoursesPage() {
                             </div>
                             <div className="flex items-center gap-1">
                               <Users className="w-4 h-4" />
-                              <span>{course.total_students.toLocaleString()}</span>
+                              <span>{course.total_students.toLocaleString()} enrolled</span>
                             </div>
                           </div>
                           <div className="flex items-center gap-1">
